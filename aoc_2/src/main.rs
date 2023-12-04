@@ -8,10 +8,10 @@ fn check_game(game: &str) -> i32 {
 
     let mut rgb = (0, 0, 0);
     for rgb_match in re.captures_iter(game) {
-        match (&rgb_match["color"], rgb_match["amount"].parse::<i32>().unwrap()) {
-            ("red", d) if d > rgb.0 => rgb.0 = d,
-            ("green", d) if d > rgb.1 => rgb.1 = d,
-            ("blue", d) if d > rgb.2 => rgb.2 = d,
+        match (&rgb_match["color"], rgb_match["amount"].parse::<i32>()) {
+            ("red", Ok(d)) if d > rgb.0 => rgb.0 = d,
+            ("green", Ok(d)) if d > rgb.1 => rgb.1 = d,
+            ("blue", Ok(d)) if d > rgb.2 => rgb.2 = d,
             _ => (),
         }
     }
