@@ -1,9 +1,11 @@
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, BufRead};
 use std::time::Instant;
 
 fn function(file: BufReader<File>) {
-    
+    for line in file.lines() {
+        todo!();
+    }    
 
 
 }
