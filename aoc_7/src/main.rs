@@ -1,9 +1,10 @@
 use std::cmp::Ordering;
 use std::fs::File;
-use std::io::{BufReader, BufRead};
+use std::io::{BufRead, BufReader};
+use std::iter::zip;
 use std::time::Instant;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]    
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 enum Card {
     Ace,
     King,
@@ -17,12 +18,12 @@ enum Card {
     Five,
     Four,
     Three,
-    Two
+    Two,
 }
 
 impl TryFrom<char> for Card {
     type Error = &'static str;
-    fn try_from(value: char) -> Result<Self, Self::Error> { 
+    fn try_from(value: char) -> Result<Self, Self::Error> {
         match value {
             'A' => Ok(Card::Ace),
             'K' => Ok(Card::King),
@@ -42,112 +43,97 @@ impl TryFrom<char> for Card {
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Debug)]    
+#[derive(PartialEq, Eq, Debug, Ord, Clone, Copy)]
 struct CardSet {
     value: Card,
     amount: usize,
 }
 
-impl Ord for CardSet {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match (&self, other) {
-            &self.amount > &other.amount => Ordering::Greater,
+impl PartialOrd for CardSet {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match other.amount.partial_cmp(&self.amount) {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
         }
-        todo!()
+        self.value.partial_cmp(&other.value)
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]    
-struct Hand { 
+#[derive(PartialEq, Eq, Ord, Debug)]
+struct Hand {
     hand: Vec<CardSet>,
-    bid: usize,
-    rank: Option<usize>,
+    bet: usize,
+}
+
+impl PartialOrd for Hand {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        let hands_amt = zip(
+            self.hand.iter().map(|x| x.amount),
+            other.hand.iter().map(|x| x.amount),
+        )
+        .map(|(x, y)| x.partial_cmp(&y))
+        .find(|x| x.unwrap() != Ordering::Equal);
+        let hands_val = zip(
+            self.hand.iter().map(|x| x.value),
+            other.hand.iter().map(|x| x.value),
+        )
+        .map(|(x, y)| y.partial_cmp(&x))
+        .find(|x| x.unwrap() != Ordering::Equal);
+        return match (hands_amt, hands_val) {
+            (None, a) => a.unwrap(),
+            (b, _) => b.unwrap(),
+        };
+    }
 }
 
 impl Hand {
-    fn new(card_string: String, bid: usize) -> Self {
-        let cards = card_string.chars().map(|x| Card::try_from(x).unwrap()).collect::<Vec<_>>();
+    fn new(card_string: String, bet: usize) -> Self {
+        let cards = card_string
+            .chars()
+            .map(|x| Card::try_from(x).unwrap())
+            .collect::<Vec<_>>();
         let mut cards_m = cards.clone();
-        // let card_sets = cards.clone().map(|card| CardSet { value: card, amount: cards.filter(|x: &&Card| **x == card).count() }).collect::<Vec<_>>();
-        // Hand {hand: card_sets, bid: bid, rank: None}
         cards_m.sort();
         cards_m.dedup();
-        let card_sets = cards_m.into_iter().map(|card| CardSet { value: card, amount: cards.iter().filter(|y| y == &&card).count()}).collect::<Vec<_>>();
-        Hand {hand: card_sets, bid: bid, rank: None}
-        // let first = {
-        //     let card = cards_m.first().unwrap();
-        //     let nr = cards.filter(|x| x == card).count();
-        //     match nr {
-        //         2.. => Some((card, nr)),
-        //         _ => None,
-        //     }            
-        // };
-        // let second = {
-        //     let card = cards_m[1..].first().unwrap();
-        //     let nr = cards.filter(|x| x == card).count();
-        //     match nr {
-        //         2.. => Some((card, nr)),
-        //         _ => None,
-        //     }
-        // };
-
-        
+        let mut card_sets = cards_m
+            .into_iter()
+            .map(|card| CardSet {
+                value: card,
+                amount: cards.iter().filter(|y| y == &&card).count(),
+            })
+            .collect::<Vec<_>>();
+        card_sets.sort();
+        Hand {
+            hand: card_sets,
+            bet,
+        }
     }
 }
 
 fn function(file: BufReader<File>) {
+    let mut hands = file
+        .lines()
+        .map(|x| match x.unwrap().split_once(" ") {
+            Some((y, z)) => return Hand::new(y.to_string(), z.parse::<usize>().unwrap()),
+            _ => panic!(),
+        })
+        .collect::<Vec<_>>();
 
-    // let mut hands = Vec::new();
-    for line in file.lines() {
-        let split = line.unwrap();
-        let split2 = split.split_once(" ").unwrap();
-        let hands = Hand::new(split2.0.to_string(), split2.1.parse::<usize>().unwrap());
-        println!("{:?}", hands);
-        // let thing = line.unwrap();
-        // let (string, bet) = thing.split_once(" ").unwrap();
-        // let values: [isize; 5] = string.chars().map(|card| {
-        //     match card {
-        //         'A' => 1,
-        //         'K' => 2,
-        //         'Q' => 3,
-        //         'J' => 4,
-        //         'T' => 5,
-        //         _ => (card.to_string().parse::<isize>().unwrap() * -1) + 17
-        //     }
-        // }).collect::<[isize; 5]>();
+    hands.sort();
 
-        // let bla = Vec::new();
-        // values.sort();
-        // let score = values.iter().fold(|acc: (Vec<(usize, usize)>), x| {
-        //     let new_acc = match acc.last() {
-        //         [] if val.0 == x => (),
-        //         _ => 
-        //     }
-        //     acc.last().unwrap().0 == x {
-        //         return (acc.0, (x, acc.1.1))
-        //     } else {
-        //         let new_acc = acc.0.push(acc.1);
-        //         return (acc.0, (x, 1))
-        //     }
-        // }, (Vec::new(), (0, 0)))
-        // let hand = values.iter().fold(Vec::new(), |acc, f| {
-        //     acc.iter().any(f)
-        // })
-        // println!("{:?}", values.collect::<Vec<_>>());
+    let value = hands.iter().enumerate().fold(0, |acc, (i, x)| {
+        println!("{:?}, {:?}, {:?}, {:?}", acc, i + 1, x.bet, (i + 1) * x.bet);
+        // println!("{:?}", x.hand);
+        return acc + (i + 1) * x.bet
+    });
 
-
-
-    }    
-
-
+    println!("{:?}", value);
 }
-
-
-
 
 fn main() {
     let start = Instant::now();
-    let contents = BufReader::new(File::open("./src/input_test").expect("Should have been able to read the file"));
+    let contents =
+        BufReader::new(File::open("./src/input").expect("Should have been able to read the file"));
     function(contents);
     let duration = start.elapsed();
     println!("Time elapsed: {:?}", duration)
