@@ -9,7 +9,6 @@ enum Card {
     Ace,
     King,
     Queen,
-    Jack,
     Ten,
     Nine,
     Eight,
@@ -19,6 +18,7 @@ enum Card {
     Four,
     Three,
     Two,
+    Joker,
 }
 
 impl TryFrom<char> for Card {
@@ -28,7 +28,6 @@ impl TryFrom<char> for Card {
             'A' => Ok(Card::Ace),
             'K' => Ok(Card::King),
             'Q' => Ok(Card::Queen),
-            'J' => Ok(Card::Jack),
             'T' => Ok(Card::Ten),
             '9' => Ok(Card::Nine),
             '8' => Ok(Card::Eight),
@@ -38,51 +37,41 @@ impl TryFrom<char> for Card {
             '4' => Ok(Card::Four),
             '3' => Ok(Card::Three),
             '2' => Ok(Card::Two),
+            'J' => Ok(Card::Joker),
             _ => Err("This value can not be converted into a Card."),
         }
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Ord, Clone, Copy)]
-struct CardSet {
-    value: Card,
-    amount: usize,
-}
-
-impl PartialOrd for CardSet {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match other.amount.partial_cmp(&self.amount) {
-            Some(core::cmp::Ordering::Equal) => {}
-            ord => return ord,
-        }
-        self.value.partial_cmp(&other.value)
-    }
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+enum Value {
+    FiveOfAKind,
+    FourOfAKind,
+    FullHouse,
+    ThreeOfAKind,
+    TwoPair,
+    OnePair,
+    HighCard,
 }
 
 #[derive(PartialEq, Eq, Ord, Debug)]
 struct Hand {
-    hand: Vec<CardSet>,
+    hand: Vec<Card>,
+    value: Value,
     bet: usize,
 }
 
 impl PartialOrd for Hand {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        let hands_amt = zip(
-            self.hand.iter().map(|x| x.amount),
-            other.hand.iter().map(|x| x.amount),
-        )
-        .map(|(x, y)| x.partial_cmp(&y))
-        .find(|x| x.unwrap() != Ordering::Equal);
-        let hands_val = zip(
-            self.hand.iter().map(|x| x.value),
-            other.hand.iter().map(|x| x.value),
-        )
-        .map(|(x, y)| y.partial_cmp(&x))
-        .find(|x| x.unwrap() != Ordering::Equal);
-        return match (hands_amt, hands_val) {
-            (None, a) => a.unwrap(),
-            (b, _) => b.unwrap(),
-        };
+        let hands_val = zip(self.hand.iter(), other.hand.iter())
+            .map(|(x, y)| y.cmp(&x))
+            .find(|x| x != &Ordering::Equal)
+            .unwrap();
+
+        match other.value.cmp(&self.value) {
+            Ordering::Equal => return Some(hands_val),
+            val => return Some(val),
+        }
     }
 }
 
@@ -97,16 +86,41 @@ impl Hand {
         cards_m.dedup();
         let mut card_sets = cards_m
             .into_iter()
-            .map(|card| CardSet {
-                value: card,
-                amount: cards.iter().filter(|y| y == &&card).count(),
+            .filter(|x| x != &Card::Joker)
+            .enumerate()
+            .map(|(i, card)| {
+                println!("{:?} {:?}", i, card);
+                if i == 0 {
+                    return cards
+                        .iter()
+                        .filter(|y| y == &&card || y == &&Card::Joker)
+                        .count();
+                } else {
+                    return cards.iter().filter(|y| y == &&card).count();
+                }
             })
             .collect::<Vec<_>>();
         card_sets.sort();
-        Hand {
-            hand: card_sets,
+        card_sets.reverse();
+
+        println!("{:?}", card_sets);
+        let value = match card_sets[..] {
+            [5] => Value::FiveOfAKind,
+            [] => Value::FiveOfAKind,
+            [4, 1] => Value::FourOfAKind,
+            [3, 2] => Value::FullHouse,
+            [3, 1, 1] => Value::ThreeOfAKind,
+            [2, 2, 1] => Value::TwoPair,
+            [2, 1, 1, 1] => Value::OnePair,
+            [1, 1, 1, 1, 1] => Value::HighCard,
+            _ => panic!(),
+        };
+
+        return Hand {
+            hand: cards,
+            value,
             bet,
-        }
+        };
     }
 }
 
@@ -122,9 +136,9 @@ fn function(file: BufReader<File>) {
     hands.sort();
 
     let value = hands.iter().enumerate().fold(0, |acc, (i, x)| {
-        println!("{:?}, {:?}, {:?}, {:?}", acc, i + 1, x.bet, (i + 1) * x.bet);
-        // println!("{:?}", x.hand);
-        return acc + (i + 1) * x.bet
+        // println!("{:?}, {:?}, {:?}, {:?}", acc, i + 1, x.bet, (i + 1) * x.bet);
+        println!("{:?}", x.hand);
+        return acc + (i + 1) * x.bet;
     });
 
     println!("{:?}", value);
