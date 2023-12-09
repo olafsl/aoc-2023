@@ -11,13 +11,13 @@ fn function(file: BufReader<File>) {
     let mut tokens: Vec<Vec<usize>> = Vec::new();
     let mut nrs: Vec<Vec<(Range<usize>, usize)>> = Vec::new();
 
-    tokens.push(Vec::new());
+    nrs.push(Vec::new());
     for line in file.lines() {
         let x = line.unwrap();
         let token_locs = re_tokens
             .find_iter(&x)
             .map(|x| x.start())
-            .collect::<Vec<_>>(); 
+            .collect::<Vec<_>>();
         tokens.push(token_locs);
 
         let numbers = re_numbers
@@ -26,17 +26,22 @@ fn function(file: BufReader<File>) {
             .collect::<Vec<_>>();
         nrs.push(numbers);
     }
-    tokens.push(Vec::new());
+    nrs.push(Vec::new());
 
-    let grouped = nrs.iter().zip(tokens.windows(3));
+    let grouped = tokens.iter().zip(nrs.windows(3));
     let mut sum = 0;
 
     for (values, windows) in grouped {
         for value in values {
-            if windows.into_iter().flatten().any(|x| {
-                value.0.contains(&(x - 1)) || value.0.contains(&(x + 1)) || value.0.contains(x)
-            }) {
-                sum += value.1
+            let matches = windows
+                .into_iter()
+                .flatten()
+                .filter(|x| {
+                    x.0.contains(&(value - 1)) || x.0.contains(&(value + 1)) || x.0.contains(value)
+                })
+                .collect::<Vec<_>>();
+            if matches.len() == 2 {
+                sum += matches.first().unwrap().1 * matches.last().unwrap().1
             }
         }
     }
@@ -46,8 +51,9 @@ fn function(file: BufReader<File>) {
 
 fn main() {
     let start = Instant::now();
-    let contents =
-        BufReader::new(File::open("./src/input").expect("Should have been able to read the file"));
+    let contents = BufReader::new(
+        File::open("./src/input").expect("Should have been able to read the file"),
+    );
     function(contents);
     let duration = start.elapsed();
     println!("Time elapsed: {:?}", duration)
