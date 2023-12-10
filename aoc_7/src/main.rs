@@ -92,12 +92,16 @@ impl Hand {
         card_sets.sort();
         card_sets.reverse();
         let jokers = cards.iter().filter(|x| x == &&Card::Joker).count();
-        let amounts = card_sets.into_iter().enumerate().map(|(i, amt)| {
-            match i {
-                0 => return amt + jokers,
-                _ => return amt,
-            };
-        }).collect::<Vec<_>>();
+        let amounts = card_sets
+            .into_iter()
+            .enumerate()
+            .map(|(i, amt)| {
+                match i {
+                    0 => return amt + jokers,
+                    _ => return amt,
+                };
+            })
+            .collect::<Vec<_>>();
 
         println!("{:?}", amounts);
         let value = match amounts[..] {

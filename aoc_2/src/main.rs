@@ -1,9 +1,8 @@
+use regex::Regex;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
-use regex::Regex;
 
 fn check_game(game: &str) -> i32 {
-
     let re = Regex::new(r"(?P<amount>\d*) (?P<color>red|green|blue)").unwrap();
 
     let mut rgb = (0, 0, 0);
@@ -15,11 +14,12 @@ fn check_game(game: &str) -> i32 {
             _ => (),
         }
     }
-    return rgb.0*rgb.1*rgb.2;
+    return rgb.0 * rgb.1 * rgb.2;
 }
 
 fn main() {
-    let contents = BufReader::new(File::open("./src/input").expect("Should have been able to read the file"));
+    let contents =
+        BufReader::new(File::open("./src/input").expect("Should have been able to read the file"));
 
     let mut games_power = 0;
     for line in contents.lines() {
