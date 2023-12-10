@@ -7,30 +7,54 @@ enum Dir {
     Right,
 }
 
+#[derive(Debug, Clone)]
 struct Choice {
     name: String,
     left: String,
     right: String,
 }
 
+impl Choice {
+    fn dir(&self, dir: &Dir) -> &str {
+        match dir {
+            Dir::Left => return &self.left,
+            Dir::Right => return &self.right,
+        }
+    }
+}
+
 fn function(file: BufReader<File>) {
     let mut lines = file.lines();
-    let dirs = lines.next().unwrap().unwrap().chars().map(|x| match x {
+    let first_line = lines.next().unwrap().unwrap();
+    let mut dirs = first_line.chars().map(|x| match x {
         'R' => Ok(Dir::Right),
         'L' => Ok(Dir::Left),
         _ => Err("Something"),
     }).cycle();
+    lines.next();
 
     let mut choice: Vec<Choice> = Vec::new();
     for line in lines.map(|x| x.unwrap()) {
         let (name, dirs) = line.split_once("=").unwrap();
-        let (left, right) = dirs.trim_matches(|x| x =='(' || x == ')').split_once(", ").unwrap();
-        choice.push(Choice { name: name.to_string(), left: left.to_string(), right: right.to_string() })
+        let (left, right) = dirs.trim().trim_matches(|x| x =='(' || x == ')').split_once(", ").unwrap();
+        choice.push(Choice { name: name.trim().to_string(), left: left.to_string(), right: right.to_string() })
     }
-    let mut curr: &str = "AAA";
-    while curr != "ZZZ" {
 
+
+    let mut curr = choice.iter().filter_map(|choice| match choice.name.chars().last() { Some('A') => Some(choice), _ => None }).collect::<Vec<_>>();
+    let mut steps = 0;
+
+    while !curr.iter().all(|x| x.name.chars().last().unwrap() == 'Z') {
+        let next_dir = dirs.next().unwrap().unwrap();
+        if steps % 1000000 == 0 {
+            println!("{:?}: {:?}", steps, curr);
+        }
+        curr = curr.iter().map(|x| {
+            return choice.iter().find(|y| x.dir(&next_dir) == y.name).unwrap();
+        } ).collect::<Vec<_>>();
+        steps += 1;
     }
+    println!("{}", steps);
 
 
 }
