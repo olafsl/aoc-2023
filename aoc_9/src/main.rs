@@ -8,8 +8,8 @@ fn next<'a>(series: &'a Vec<isize>) -> isize {
         .map(|slice| slice.last().unwrap() - slice.first().unwrap())
         .collect::<Vec<_>>();
     return match next_series.clone().into_iter().all(|x| x == 0) {
-        true => *series.last().unwrap(),
-        false => series.last().unwrap() + next(&next_series.clone())
+        true => *series.first().unwrap(),
+        false => series.first().unwrap() - next(&next_series.clone())
     };
 }
 
