@@ -87,24 +87,20 @@ impl Hand {
         let mut card_sets = cards_m
             .into_iter()
             .filter(|x| x != &Card::Joker)
-            .enumerate()
-            .map(|(i, card)| {
-                println!("{:?} {:?}", i, card);
-                if i == 0 {
-                    return cards
-                        .iter()
-                        .filter(|y| y == &&card || y == &&Card::Joker)
-                        .count();
-                } else {
-                    return cards.iter().filter(|y| y == &&card).count();
-                }
-            })
+            .map(|card| cards.iter().filter(|y| y == &&card).count())
             .collect::<Vec<_>>();
         card_sets.sort();
         card_sets.reverse();
+        let jokers = cards.iter().filter(|x| x == &&Card::Joker).count();
+        let amounts = card_sets.into_iter().enumerate().map(|(i, amt)| {
+            match i {
+                0 => return amt + jokers,
+                _ => return amt,
+            };
+        }).collect::<Vec<_>>();
 
-        println!("{:?}", card_sets);
-        let value = match card_sets[..] {
+        println!("{:?}", amounts);
+        let value = match amounts[..] {
             [5] => Value::FiveOfAKind,
             [] => Value::FiveOfAKind,
             [4, 1] => Value::FourOfAKind,
