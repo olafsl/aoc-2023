@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::time::Instant;
 
-enum Direction {
+enum _Direction {
     Vertical,
     Horizontal,
     UpRight,
