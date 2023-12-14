@@ -18,6 +18,25 @@ fn transpose(file: &str) -> String {
     return transposed;
 }
 
+fn equal_check(chunk: &str) -> Option<usize> {
+    let lines = chunk.lines().map(|x| x.to_string()).collect::<Vec<_>>();
+    for i in 1..(lines.len()) {
+        let (head, tail) = lines.split_at(i);
+        let (start, end) = if i * 2 < lines.len() {
+            (head, tail.get(..i).unwrap())
+        } else {
+            (head.get(head.len() - (lines.len() - i)..).unwrap(), tail)
+        };
+        let (start, mut end) = (Vec::from(start), Vec::from(end));
+        end.reverse();
+
+        if start == end {
+            return Some(i);
+        }
+    }
+    return None;
+}
+
 fn function(file_string: String) {
     let chunks = file_string
         .split("\n\n")
@@ -25,22 +44,15 @@ fn function(file_string: String) {
         .collect::<Vec<_>>();
     let mut answer = 0;
     for chunk in chunks {
-        let lines = chunk.lines().collect::<Vec<_>>();
-        for i in 1..(lines.len()) {
-            let (begin, end) = lines.split_at(i);
-            let length = begin.len().min(end.len());
-            let new_begin = lines.split_at(length).0;
-            println!("{}, {}, {}", begin.len(), end.len(),length);
-            let new_end = lines.split_at(lines.len() - length).1;
-            println!("EQUAL:{:?}\nWITH  :{:?}", new_begin, new_end);
-            if new_begin == new_end {
-                answer += i;
-                println!("EQUAL:{:?}\nWITH  :{:?}", new_begin, new_end);
-                break
-            }
-        }
-        let transposed_chunk = transpose(chunk);
-
+        answer += match equal_check(chunk) {
+            Some(x) => x*100,
+            None => 0,
+        };
+        let transposed_chunk = &transpose(chunk);
+        answer += match equal_check(transposed_chunk) {
+            Some(x) => x,
+            None => 0,
+        };
     }
 
     println!("{}", answer)
@@ -49,7 +61,7 @@ fn function(file_string: String) {
 fn main() {
     let start = Instant::now();
     let mut contents = BufReader::new(
-        File::open("./src/input_test").expect("Should have been able to read the file"),
+        File::open("./src/input").expect("Should have been able to read the file"),
     );
     let mut string_file = String::new();
     contents.read_to_string(&mut string_file).unwrap();
